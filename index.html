@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<title>Minetest Skin Converter</title>
+		<link rel="stylesheet" type="text/css" href="character.css">
+		<style type="text/css">
+/* Do not blur zoomed images; https://drafts.csswg.org/css-images-3/#the-image-rendering */
+img, div {
+	image-rendering: pixelated;
+	image-rendering: -moz-crisp-edges;
+	image-rendering: -o-crisp-edges;
+	image-rendering: -webkit-optimize-contrast;
+	-ms-interpolation-mode: nearest-neighbor;
+}
+/* Hide tools and controls */
+div#imgTools {
+	display: none;
+}
+div#imgControl {
+	display: none;
+}
+table, td, tr {
+	margin: 0em;
+	padding: 0em;
+	border: 0em;
+	background-color: inherit;
+	font: inherit;
+	text-align: left;
+	align: left;
+}
+table {
+	width: 100%;
+}
+td {
+	width: 50%;
+}
+
+		</style>
+	</head>
+	<body id="body">
+	<!-- use <u>...</u> to mark on-mouse-over help / title tag -->
+		<div id="loader"><table><tr><td>
+		Load a <span title="64×64 / 256×256 / 512×512 / 1024×1024 PNG file"><u>Minecraft (1:1)</u></span> or <span title="64×32 / 512×256 / 1024×512 PNG file"><u>Minetest (2:1)</u></span> skin: <input type="file" id="imgLoader" accept="image/png" onChange="loadImage()" />
+		</td></tr></table></div>
+		<div id="imgTools"><table><tr><td>
+		Zoom to <button type="button" onclick="zoom.to('0.25')">1:4</button>
+		<button type="button" onclick="zoom.to('0.5')">1:2</button>
+		<button type="button" onclick="zoom.to('1')">1:1</button>
+		<button type="button" onclick="zoom.to('2')">2:1</button>
+		<button type="button" onclick="zoom.to('4')">4:1</button>
+		<button type="button" onclick="zoom.to('8')">8:1</button>
+		<button type="button" onclick="zoom.to('16')">16:1</button>
+		</td><td>
+		Update <button type="button" onclick="renderAs('mcCharacter')" title="Render as Minecraft Character"><u>Minecraft</u></button>
+		<button type="button" onclick="renderAs('mcCloth')" title="Render as Minecraft Character with Clothes"><u>with Clothes</u></button> / 
+		<button type="button" onclick="renderAs('mtCharacter')" title="Render as Minetest"><u>Minetest</u></button>
+		<button type="button" onclick="renderAs('mtCloth')" title="Render as Minetest Character with Clothes"><u>with Hat & Cape</u></button> 3d character.
+		</td></tr><tr><td>Background Color:<input type="color" value="#FFFFFF" onchange="setBackgroundColor('dstImg', this.value)" onclick="setBackgroundColor('dstImg', this.value)"/>
+		<!-- issue: onchange() is not triggered if the bg color was checkerboard before
+			fix: onclick() but this changes the color value even if the user selects cancel -->
+		<button type="button" onclick="setBackgroundColor('dstImg', 'checkerboard')">Checkerboard</button>
+		/ <input type="color" value="#FFFFFF" onchange="setBackgroundColor('srcImg', this.value)" onclick="setBackgroundColor('srcImg', this.value)"/>
+		<button type="button" onclick="setBackgroundColor('srcImg', 'checkerboard')">Checkerboard</button>
+		</td><td><input type="color" value="#FFFFFF" onchange="setBackgroundColor('characterElementId', this.value)" onclick="setBackgroundColor('characterElementId', this.value)"/>
+		<button type="button" onclick="setBackgroundColor('characterElementId', 'checkerboard')">Checkerboard</button>
+		</td></tr></table></div>
+		
+		<div id="imgControl"><table><tr><td>
+		<button type="button" onclick="copy('areaJacket.back', 'areaCapeMinetest')" title="Copy Minecraft 'Cape' to Minetest"><u>Copy</u></button>/
+		<button type="button" onclick="copy('areaCapeMinetest', 'areaNull')" title="Replace 'Cape' area with transparency"><u>Erase</u></button> Cape
+		</td><td><!-- empty --></td></tr><tr><td>
+		Copy<input id="alphaJacket" type="text" size="1" value="0.5" title="Alpha value"><button type="button" onclick="copy('areaJacket.all', 'areaBody.all', '0', 'alphaJacket')" title="Copy Minecraft 'Jacket' over Minetest 'Body' (including cape) with alpha transparency"><u>Jacket</u></button>/
+		<button type="button" onclick="copy('areaBody.back', 'areaBody.back')" title="Restore the back of the Minetest body"><u>Body.Back</u></button>/
+		<button type="button" onclick="copy('areaBody.all', 'areaBody.all')" title="Restore the whole Minetest body"><u>Body</u></button>
+		</td><td><!-- empty --></td></tr><tr><td>
+		Copy Left<input id="alphaTrouserLeft" type="text" size="1" value="0.5" title="Alpha value"><button type="button" onclick="copy('areaTrouserLeft.all', 'areaLegRight.all', '1', 'alphaTrouserLeft' )" title="Copy and flip 'Left Trouser' over 'Right Leg' with alpha transparency"><u>Trouser</u></button>/
+		<button type="button" onclick="copy('areaLegLeft.all', 'areaLegRight.all', '1')" title="Copy and flip the left leg"><u>Leg</u></button>.
+		Copy Right<input id="alphaTrouserRight" type="text" size="1" value="0.5" title="Alpha value"><button type="button" onclick="copy('areaTrouserRight.all', 'areaLegRight.all', '0', 'alphaTrouserRight' )" title="Copy 'Right Trouser' over 'Right Leg' with alpha transparency"><u>Trouser</u></button>/
+		<button type="button" onclick="copy('areaLegRight.all', 'areaLegRight.all')" title="Restore the right leg"><u>Leg</u></button>
+		</td><td><!-- empty --></td></tr><tr><td>
+		Copy Left<input id="alphaSleeveLeft" type="text" size="1" value="0.5" title="Alpha value"><button type="button" onclick="copy('areaSleeveLeft.all', 'areaArmRight.all', '1', 'alphaSleeveLeft' )" title="Copy and flip 'Left Sleeve' over 'Right Arm' with alpha transparency"><u>Sleeve</u></button>/
+		<button type="button" onclick="copy('areaArmLeft.all', 'areaArmRight.all', '1')" title="Copy and flip the left arm"><u>Arm</u></button>
+		Copy Right<input id="alphaSleeveRight" type="text" size="1" value="0.5" title="Alpha value"><button type="button" onclick="copy('areaSleeveRight.all', 'areaArmRight.all', '0', 'alphaSleeveRight')" title="Copy 'Right Sleeve' over 'Right Arm' with alpha transparency"><u>Sleeve</u></button>
+		<button type="button" onclick="copy('areaArmRight.all', 'areaArmRight.all')" title="Restore the right arm"><u>Arm</u></button>
+		</td><td><!-- empty --></td></tr></table></div>
+		
+		<div id="images"><table><tr><td>
+		<img id="dstImg" src="" border="1" alt="Placeholder for new skin. When it shows the proper skin: Right-Click; Save Image As ..."  title="Right-Click; Save Image As ..."/>
+		</td><td rowspan="2" valign="top" style="min-width:64px;"><div id="characterElementId"></div></td></tr><tr><td>
+		<img id="srcImg" src="" border="1" alt="Placeholder for the source skin"/><br/>
+		</td></tr></table></div>
+		<!-- loading local js files with UTF-8 characters will fail without charset="utf-8" -->
+		<script type="text/javascript" charset="utf-8" src="zoom.js"></script>
+		<script type="text/javascript" charset="utf-8" src="uvareas.js"></script>
+		<script type="text/javascript" charset="utf-8" src="three.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="uvcharacter.js"></script>
+		<script type="text/javascript" charset="utf-8">//<![CDATA[
+
+function setBackgroundColor(dstElem, value) {
+	console.log("INFO\tsetBackgroundColor(" + dstElem + ", " + value + ")");
+	if (value == "checkerboard") {
+		document.getElementById(dstElem).style.backgroundImage = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAQAAADYv8WvAAAAEklEQVQI12Oc+f8sA9NZBmMGABasA2lR+US6AAAAAElFTkSuQmCC')";
+		document.getElementById(dstElem).style.backgroundSize = "16px 16px";
+	} else {
+		document.getElementById(dstElem).style.backgroundImage = "";
+		document.getElementById(dstElem).style.backgroundColor = value;
+	};
+};
+
+// Strings used in HTML as IDs and in code
+// Use these vars while coding to avoid typos.
+const constImgLoader = "imgLoader";
+const constSkinMinecraft = "minecraft";
+const constSkinMinetest = "minetest";
+const constIdSrcImage = "srcImg";
+const constIdDstImage = "dstImg";
+const constLoader = "loader";
+const constImageTools = "imgTools";
+const constImageControls = "imgControl";
+const idImages = "images"
+const strTransparency = "transparency";
+var zoom = new Zooming('images');
+
+// uvFaceWidth: Block size in pixels, 1/16 of the image width. 4px for standard skins with 64px width.
+var uvFaceWidth = 4;
+
+// srcImg, dstImg: The public source and destination images
+var srcImg = document.getElementById(constIdSrcImage);
+var dstImg = document.getElementById(constIdDstImage);
+
+// dstCanvas: The internal image buffer for the modifications (copy, alpha, mirror, ...)
+var dstCanvas = document.createElement('canvas');
+
+
+// Main function to load the image after the user selected it
+function loadImage() {
+	// reset zoom level before loading. Otherwise "em" scaling causes random issues
+	zoom.to(1);
+	
+	// load selected image
+	var file = document.getElementById(constImgLoader).files[0];
+	srcImg.style.width = "auto";
+	srcImg.style.height = "auto";
+	srcImg.addEventListener("load", function () {
+		imageLoaded();
+	}, false);
+	srcImg.src = window.URL.createObjectURL(file);
+	// function continues in imageLoaded() as soon as the image is loaded
+}
+function imageLoaded() {
+/*
+	localCharacterCanvas.width = srcImg.width;
+	localCharacterCanvas.height = srcImg.width; // canvas will be should be square
+	localCharacterCanvas.getContext("2d").drawImage(srcImg, 0, 0);
+	minecraftCharacter.render;
+	*/
+	// calculate width and height of target image
+	var srcWidth = srcImg.width;
+	var srcHeight = srcImg.height; // Skins must be square or ½ square box. Otherwise skin conversion fails
+	var dstWidth = srcWidth;
+	var dstHeight = srcWidth/2; // srcWidth/2 to get ½ square. We don't rely on srcHeight
+	uvFaceWidth = srcWidth / 16;
+	uvFaceWidth = srcWidth / constUvWidth;
+
+	// assume Minecraft skin
+	var srcSkinType = constSkinMinecraft;
+	if (srcWidth == srcHeight*2) {
+		// setting skin source to Minetest and the image format to square (widht=height).
+		srcSkinType = constSkinMinetest;
+		dstHeight = srcWidth;
+	}
+	
+	// Set image size to 'em' to allow zooming
+	srcImg.style.width = srcWidth/16 + "em";
+	srcImg.style.height = srcHeight/16 + "em";
+	dstImg.style.width = dstWidth/16 + "em";
+	dstImg.style.height = dstHeight/16 + "em";
+	
+	if ( (srcWidth == srcHeight) || (srcWidth == (srcHeight*2)) ) {
+		// Expected image size
+		setBackgroundColor(constIdSrcImage, 'checkerboard');
+		setBackgroundColor(constIdDstImage, 'checkerboard');
+		// Hide loader and show zoom and background buttons
+		document.getElementById(constLoader).style.display = "none";
+		document.getElementById(constImageTools).style.display = "initial";
+		if (srcWidth == srcHeight) {
+			// Minecraft image, show copy buttons etc.
+			document.getElementById(constImageControls).style.display = "initial";
+		}
+	} else {
+		// Expect the unexpected
+		alert("Please upload a 64×64 / 256×256 / 512×512 / 1024×1024 Minecraft or a 64×32 / 512×256 / 1024×512 Minetest image! (not " + srcWidth + "×" + srcHeight + ")");
+		return;
+	};
+	
+	// Copy upper part of skin (1:1)
+	dstCanvas.width = dstWidth;
+	dstCanvas.height = dstHeight;
+	var context = dstCanvas.getContext('2d');
+	draw(srcImg, areaMinetest, context, areaMinetest, uvFaceWidth, 0);
+	
+	// adjust for Minetest / Minecraft
+	if (srcSkinType == constSkinMinecraft) {
+		// cleanup unused areas
+		draw(srcImg, areaHead.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHead.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHat.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHat.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaLegRight.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaLegRight.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaBody.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaBody.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaArmRight.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaArmRight.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaUnusedMinetest, context, areaNull, uvFaceWidth, 0);
+		// copy Jacket.back(Cape) to areaCapeMinetest
+		draw(srcImg, areaJacket.back, context, areaCapeMinetest, uvFaceWidth, 0);
+	} else { 
+		// srcSkinType == constSkinMinetest
+		// cleanup unused areas in upper part of the image
+		draw(srcImg, areaHead.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHead.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHat.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaHat.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaLegRight.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaLegRight.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaBody.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaBody.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaArmRight.unusedL, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaArmRight.unusedR, context, areaNull, uvFaceWidth, 0);
+		draw(srcImg, areaUnusedMinecraft, context, areaNull, uvFaceWidth, 0);
+		// Lower part of the image is blank, nothing to clear
+		
+		// copy Jacket.back
+		draw(srcImg, areaCapeMinetest, context, areaJacket.back, uvFaceWidth, 0);
+			
+		// copy and mirror leg: top
+		draw(srcImg, areaLegRight.top, context, areaLegLeft.top, uvFaceWidth, 1);
+		// copy and mirror leg: bottom
+		draw(srcImg, areaLegRight.bottom, context, areaLegLeft.bottom, uvFaceWidth, 1);
+		// copy and mirror leg: right, front, left
+		draw(srcImg, areaLegRight.lfr, context, areaLegLeft.lfr, uvFaceWidth, 1);
+		// copy and mirror leg: back
+		draw(srcImg, areaLegRight.back, context, areaLegLeft.back, uvFaceWidth, 1);
+		
+		// copy and mirror arm: top
+		draw(srcImg, areaArmRight.top, context, areaArmLeft.top, uvFaceWidth, 1);
+		// copy and mirror arm: bottom
+		draw(srcImg, areaArmRight.bottom, context, areaArmLeft.bottom, uvFaceWidth, 1);
+		// copy and mirror arm: right, front, left
+		draw(srcImg, areaArmRight.lfr, context, areaArmLeft.lfr, uvFaceWidth, 1);
+		// copy and mirror arm: back
+		draw(srcImg, areaArmRight.back, context, areaArmLeft.back, uvFaceWidth, 1);
+	}
+	
+	// copy data from the internal dstCanvas to the public dstImg
+	var tmpDataUrl = dstCanvas.toDataURL('image/png');
+	dstImg.src = tmpDataUrl;
+}
+
+
+/*
+copy(from, to, flip, alphaId)
+from: srcArea
+to: dstArea. Set to 'areaNull' to clean the region defined in srcArea
+flip values: 0 = normal copy, 1 = flip area
+alphaId: element which stores the desired alpha value
+*/
+function copy(from, to, flip, alphaId) {
+	var flipValue = 0;
+	if (flip != null) {
+		flipValue = flip;
+	}
+	var alpha = 1;
+	if (alphaId)	{
+		alpha = document.getElementById(alphaId).value;
+	};
+	console.log("INFO\tcopy from " + from + " to " + to + ". Alpha: " + alpha + " (" + alphaId + "). Flip:" + flip);
+	var context = dstCanvas.getContext('2d');
+	areaFrom = eval(from);
+	areaTo = eval(to);
+
+	if (areaTo == areaNull) {
+		draw(srcImg, areaFrom, context, areaNull, uvFaceWidth, flipValue);
+	} else if (flip == 1) {
+		var fromArray = from.split(".");
+		var toArray = to.split(".");
+		if ( (fromArray[1] == "all") && (toArray[1] == "all") ) {
+			// copy and mirror arm: top; bottom; right, front, left; back
+			context.globalAlpha = alpha;
+			draw(srcImg, eval(fromArray[0] + ".top"), context, eval(toArray[0] + ".top"), uvFaceWidth, flipValue);
+			draw(srcImg, eval(fromArray[0] + ".bottom"), context, eval(toArray[0] + ".bottom"), uvFaceWidth, flipValue);
+			draw(srcImg, eval(fromArray[0] + ".lfr"), context, eval(toArray[0] + ".lfr"), uvFaceWidth, flipValue);
+			draw(srcImg, eval(fromArray[0] + ".back"), context, eval(toArray[0] + ".back"), uvFaceWidth, flipValue);
+		} else {
+			console.error("ERROR\tcopy 'from' and 'to' must end with '.all'");
+		}
+	} else {
+		context.globalAlpha = alpha;
+		draw(srcImg, areaFrom, context, areaTo, uvFaceWidth, flipValue);
+	}
+	var tmpDataUrl = dstCanvas.toDataURL('image/png');
+	dstImg.src = tmpDataUrl;
+	
+}
+
+/*
+draw(srcImg, srcArea, dstContext, dstArea, uvFaceWidth, flip)
+srcImg: the source image to read the skin from
+srcArea: the area to read 
+dstContext: the context to write the skin to
+dstArea: dstArea. Set to 'areaNull' to clean the region defined in srcArea
+uvFaceWidth: uvFaceWidth
+flip: 0 = normal copy, 1 = flip area horizontally
+*/
+function draw(srcImg, srcArea, dstContext, dstArea, uvFaceWidth, flip) {
+	console.log("INFO\tdraw (" + srcArea.x + "/" + srcArea.y + ")-(" + srcArea.w + "/" + srcArea.h + ")  (" + dstArea.x + "/" + dstArea.y + ") " + uvFaceWidth + " " + flip);
+	var bsClipX = srcArea.x * uvFaceWidth;
+	var bsClipY = srcArea.y * uvFaceWidth;
+	var bsWidth = srcArea.w * uvFaceWidth;
+	var bsHeight = srcArea.h * uvFaceWidth;
+	var bsDstX = dstArea.x * uvFaceWidth;
+	var bsDstY = dstArea.y * uvFaceWidth;
+
+	if ( (dstArea.w == 0) || (dstArea.h == 0) ) {
+		dstContext.clearRect(bsClipX, bsClipY, bsWidth, bsHeight);
+	} else if (flip == 0) {
+		dstContext.drawImage(srcImg, bsClipX, bsClipY, bsWidth, bsHeight, bsDstX, bsDstY, bsWidth, bsHeight);
+	} else {
+		// use a temporary canvas to flip the element
+		var canvas = document.createElement('canvas');
+		canvas.width = bsWidth;
+		canvas.height = bsHeight;
+		var context = canvas.getContext('2d');
+		context.save();
+		if (flip == 1) {
+			context.translate(bsWidth, 0);
+			context.scale(-1, 1);
+		}
+		context.drawImage(srcImg, bsClipX, bsClipY, bsWidth, bsHeight, 0, 0, bsWidth, bsHeight);
+		context.restore();
+		dstContext.drawImage(canvas, bsDstX, bsDstY, bsWidth, bsHeight);
+	}
+}
+
+
+// create 3d character (uvcharacter.js)
+var minecraftCharacter = new MinecraftCharacter('characterElementId');
+var localScene = minecraftCharacter.scene; // The THREE.js scene
+var localCharacterCanvas = minecraftCharacter.canvas; // The canvas which contains the UV map of the skin
+function renderAs(type) {
+	console.log("renderAs(" + type + ")");
+	var showCloth = false;
+	if ( (type == "mcCloth") || (type == "mtCloth") ) {
+		// show cloth
+		showCloth = true;
+	}
+	localScene.getObjectByName(constHat).visible = showCloth;
+	localScene.getObjectByName(constJacket).visible = showCloth;
+	localScene.getObjectByName(constSleeveLeft).visible = showCloth;
+	localScene.getObjectByName(constSleeveRight).visible = showCloth;
+	localScene.getObjectByName(constTrouserLeft).visible = showCloth;
+	localScene.getObjectByName(constTrouserRight).visible = showCloth;
+	
+	
+	localCharacterCanvas.width = dstCanvas.width;
+	localCharacterCanvas.height = dstCanvas.width; // square
+	var context = localCharacterCanvas.getContext("2d");
+	context.clearRect(0, 0, dstCanvas.width, dstCanvas.width);
+	if ( (type == "mcCharacter") || (type == "mcCloth") ) {
+		// show Minecraft skin
+		if (dstCanvas.width == dstCanvas.height) {
+			// srcImg is Minetest (½ square), dstCanvas was properly build
+			context.drawImage(dstCanvas, 0, 0);
+		} else {
+			// srcImg is Minecraft (square), use it here
+			context.drawImage(srcImg, 0, 0);
+		}
+	}
+	if ( (type == "mtCharacter") || (type == "mtCloth") ) {
+		if (dstCanvas.width == dstCanvas.height) {
+			// srcImg is Minetest (½ square), dstCanvas was properly build
+			context.drawImage(dstCanvas, 0, 0);
+		} else {
+			// srcImg is Minecraft (square), dstCanvas (½ square) contains the Minetest image
+			// copy the Minetest image
+			context.drawImage(dstCanvas, 0, 0);
+		
+		// fixme / duplicate code
+		// copy Jacket.back
+		draw(dstCanvas, areaCapeMinetest, context, areaJacket.back, uvFaceWidth, 0);
+			
+		// copy and mirror leg: top
+		draw(dstCanvas, areaLegRight.top, context, areaLegLeft.top, uvFaceWidth, 1);
+		// copy and mirror leg: bottom
+		draw(dstCanvas, areaLegRight.bottom, context, areaLegLeft.bottom, uvFaceWidth, 1);
+		// copy and mirror leg: right, front, left
+		draw(dstCanvas, areaLegRight.lfr, context, areaLegLeft.lfr, uvFaceWidth, 1);
+		// copy and mirror leg: back
+		draw(dstCanvas, areaLegRight.back, context, areaLegLeft.back, uvFaceWidth, 1);
+		
+		// copy and mirror arm: top
+		draw(dstCanvas, areaArmRight.top, context, areaArmLeft.top, uvFaceWidth, 1);
+		// copy and mirror arm: bottom
+		draw(dstCanvas, areaArmRight.bottom, context, areaArmLeft.bottom, uvFaceWidth, 1);
+		// copy and mirror arm: right, front, left
+		draw(dstCanvas, areaArmRight.lfr, context, areaArmLeft.lfr, uvFaceWidth, 1);
+		// copy and mirror arm: back
+		draw(dstCanvas, areaArmRight.back, context, areaArmLeft.back, uvFaceWidth, 1);	
+		}
+	}
+	minecraftCharacter.render;
+	minecraftCharacter.reRender; // update character size manually
+
+}
+
+
+	//]]> 
+	</script>
+	</body>
+</html>

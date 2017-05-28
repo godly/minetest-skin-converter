@@ -12,7 +12,7 @@ It supports standard and HD skins.
 Usage
 -------
 
-The converters runs in the browser, after download no internet connection is requierd.
+https://godly.github.io/minetest-skin-converter/ runs in the browser, after download no internet connection is requiered.
 
 First upload a square Minecraft skin from your local drive.
 
